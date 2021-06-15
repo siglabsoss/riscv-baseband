@@ -1,0 +1,313 @@
+#ifndef __RINGBUS_H__
+#define __RINGBUS_H__
+
+// Masks
+#define TYPE_MASK               (0xFF000000)
+#define DATA_MASK               (0x00FFFFFF)
+
+// We can list up to 256 specific types here.
+#define RING_TEST_CMD         (0x00000000)
+#define BOOTLOADER_CMD        (0x01000000)
+#define DMA_IN_CMD            (0x02000000)
+#define TURNSTILE_CMD         (0x03000000)
+#define CONFIG_DAC_CMD        (0x04000000)
+#define TX_CHANNEL_CMD        (0x05000000)
+#define DMA_OUT_CMD           (0x06000000)
+#define VGA_GAIN_CMD          (0x07000000)
+#define PASS_DATA_CMD         (0x08000000)
+#define CS01_PLAYBACK         (0x09000000)
+#define DMA_OUT_PACKET_CMD    (0x0A000000)
+#define STREAM_CMD            (0x0B000000)
+#define RESET_ADC_COUNTER_CMD (0x0C000000)
+#define EN_ADC_COUNTER_CMD    (0x0D000000)
+#define DISAB_ADC_COUNTER_CMD (0x0E000000)
+#define DSA_GAIN_CMD          (0x0F000000)
+#define ETH_TEST_CMD          (0x10000000)
+#define EDGE_EDGE_IN          (0x11000000)
+#define EDGE_EDGE_OUT         (0x12000000)
+#define SATURATION_RATIO_CMD  (0x13000000)
+#define DISABLE_DAC_CMD       (0x14000000)
+#define EXTENDED_SR_CMD       (0x15000000)
+#define EXTENDED_EXECUTE_CMD  (0x16000000)
+#define DMA_FLUSH_RESET_CMD   (0x17000000)
+#define SYNCHRONIZATION_CMD   (0x18000000)
+#define NODEJS_RPC_CMD        (0x19000000)
+// #define SMODEM_BOOT_CMD       (0x1A000000)  // UNUSED however this might be useful if we add back
+#define CS11_PROGRESS_CMD     (0x1B000000) // DUPLICATE DEPRECATED
+#define CS02_PROGRESS_CMD     (0x1B000000) // DUPLICATE DEPRECATED
+#define CS20_PROGRESS_CMD     (0x1B000000) // DUPLICATE DEPRECATED
+#define TX_PROGRESS_CMD       (0x1B000000) // DUPLICATE
+#define TX_CFO_LOWER_CMD      (0x20000000)
+#define TX_CFO_UPPER_CMD      (0x21000000)
+#define POWER_ESTIMATION_CMD  (0x22000000)
+#define AGC_TEST_CMD          (0x23000000)
+#define FEEDBACK_BUS_CMD      (0x24000000)
+#define NCO_TEST_CMD          (0x27000000)
+#define SFO_PERIODIC_ADJ_CMD  (0x28000000)
+#define SFO_PERIODIC_SIGN_CMD (0x29000000)
+#define RESET_LIFETIME_CMD    (0x2A000000) // DEPRECATED with move to duplex
+#define ADD_LIFETIME_CMD      (0x2B000000) // DEPRECATED with move to duplex
+#define ETH_GET_STATUS_CMD    (0x2C000000)
+#define EQUALIZER_CMD         (0x30000000)
+#define SFO_COORDINATION_CMD  (0x31000000)
+#define TDMA_CMD              (0x32000000)
+// #define SCHEDULE_CMD          (0x33000000)
+// #define SCHEDULE_RESET_CMD    (0x34000000)
+// #define SCHEDULE_MODE_CMD     (0x35000000)
+#define PERF_CMD              (0x36000000)
+#define FB_BUS_RESET_CMD      (0x37000000)
+#define FEATURE_FLAGS_A_CMD   (0x38000000)
+#define FEATURE_FLAGS_B_CMD   (0x39000000)
+#define IMEM_WORD_CMD         (0x3A000000)
+#define VMEM_WORD_CMD         (0x3B000000)
+#define MEM_WORD_CMD          (0x3C000000)
+#define CS21_ADVANCE_LIFETIME (0x40000000)
+#define REQUEST_MAPMOV_REPORT (0x41000000)
+#define SEED_RANDOM_CMD       (0x42000000)
+#define MAPMOV_MODE_CMD       (0x43000000)
+#define SCHEDULE_EPOC_CMD     (0x44000000)  // DEPRECATED with tickleAttachedProgress()
+#define GENERIC_OPERATOR_CMD  (0x44000000)
+#define MAPMOV_RESET_CMD      (0x45000000)
+#define REQUEST_EPOC_CMD      (0x46000000)
+#define FILL_REPLY_CMD        (0x47000000)
+#define DO_NOTHING_CMD        (0x48000000)
+#define SABOTAGE_CMD          (0x49000000)
+#define CS02_REPORT_ERRORS_CMD (0x4a000000) // DUPLICATE DEPRECATED
+#define CS11_REPORT_ERRORS_CMD (0x4a000000) // DUPLICATE DEPRECATED
+#define CS20_REPORT_ERRORS_CMD (0x4a000000) // DUPLICATE DEPRECATED
+#define TX_REPORT_ERRORS_CMD   (0x4a000000) // DUPLICATE
+#define CS11_TEST_SLICER_CMD (0x4c000000)
+#define FB_REPORT_STATUS_CMD (0x4f000000)
+#define CS20_MAIN_REPORT_STATUS_CMD (0x50000000) // DUPLICATE DEPRECATED
+#define CS02_MAIN_REPORT_STATUS_CMD (0x50000000) // DUPLICATE DEPRECATED
+#define CS11_MAIN_REPORT_STATUS_CMD (0x50000000) // DUPLICATE DEPRECATED
+#define TX_MAIN_REPORT_STATUS_CMD   (0x50000000) // DUPLICATE
+#define MAGADJUST_CMD        (0x51000000)
+#define CS11_SET_GAIN_CMD    (0x52000000) // DUPLICATE DEPRECATED
+#define RX_SET_GAIN_CMD      (0x52000000) // DUPLICATE
+#define CS21_DEMOD_MODE      (0x53000000) // DUPLICATE DEPRECATED
+#define RX_DEMOD_MODE        (0x53000000) // DUPLICATE
+#define CORRUPT_DMA_OUT_CMD  (0x54000000)
+#define DAC_CFG_LOCK_CMD     (0x55000000)
+#define CHECK_BOOTLOAD_CMD   (0x56000000)
+#define FFT_BARREL_SHIFT_CMD (0x57000000)
+#define CS21_CHOOSE_CUSTOM_SC_CMD   (0x58000000) // DUPLICATE DEPRECATED
+#define RX_CHOOSE_CUSTOM_SC_CMD     (0x58000000) // DUPLICATE
+#define TEST_STACK_CMD       (0x59000000)
+#define CS10_ENABLE_MAG_CHECK (0x60000000) // DUPLICATE DEPRECATED
+#define CS01_ENABLE_MAG_CHECK (0x60000000) // DUPLICATE DEPRECATED
+#define TX_ENABLE_MAG_CHECK   (0x60000000) // DUPLICATE
+#define REQUEST_UNDERFLOW_REPORT_CMD (0x61000000)
+#define SET_TDMA_SC_CMD       (0x62000000)
+#define SET_MASK_SC_CMD       (0x63000000)
+#define LIFETIME_TO_EPOC_CMD  (0x64000000) // DEPRECATED with move to duplex
+#define UART_PUT_CHAR_CMD     (0x65000000)
+#define TRIGGER_EXFIL_CMD     (0x66000000)
+#define MAG_FILTER_GAIN_CMD   (0x67000000)
+#define RX_PHASE_CORRECTION_CMD (0x68000000)
+#define CHECK_LAST_USERDATA_CMD (0x69000000)
+#define APP_BARREL_SHIFT_CMD    (0x6a000000)
+#define TX_TONE_ONLY_CMD        (0x6b000000)
+#define DEFAULT_APP_BARREL_SHIFT_CMD (0x6c000000)
+#define AUTO_GAIN_CMD           (0x6d000000)
+#define COOKED_DATA_TYPE_CMD    (0x6e000000)
+#define ZERO_TX_CMD             (0x6f000000)
+#define EQ_ROTATION_CMD         (0x70000000)
+#define GET_TIMER_CMD           (0x71000000)
+#define SELF_SYNC_CMD           (0x72000000)
+#define CFO_TURN_OFF_CMD        (0x73000000)
+#define DUPLEX_SYNCHRONIZATION_CMD (0x74000000)
+#define STALL_CHECK_CMD          (0x75000000)
+#define DEBUG_OTA_FRAME_CMD      (0x76000000)
+#define STAMP_STREAM_OUTPUT_CMD    (0x77000000)
+#define SFO_CORRECTION_RX_CMD    (0x78000000)
+#define SFO_SHIFT_RX_CMD         (0x79000000)
+#define EQ_DATA_RX_CMD           (0x7a000000)
+#define IIR_COEFF_STATE_RX_CMD   (0x7b000000)
+#define IIR_COEFF_STATE_TX_CMD   (0x7c000000)
+#define RX_EQ_FOR_DATA_CMD       (0x7d000000)
+#define TX_TONE_2_VALUE          (0x7e000000) // tone 2 on rx side, actually 1022 on tx side
+#define TX_OOK_VALUE             (0x7f000000)
+#define BLF_ONE_VALUE            (0x80000000)
+#define BLF_TWO_VALUE            (0x81000000)
+#define BLF_THREE_VALUE          (0x82000000)
+#define SUPRESS_EQ_FEEDBACK_L_CMD (0x83000000)
+#define SUPRESS_EQ_FEEDBACK_H_CMD (0x84000000)
+#define TX_REPEAT_FRAMES_CMD      (0x85000000)
+#define BEAMFORMED_RESIDUE_CORRECTION_FLAG_CMD       (0x86000000)
+#define SNR_SUBCARRIER_INDEX_CMD                     (0x87000000)
+#define GRC_SUBCARRIER_SELECT_CMD                    (0x88000000)
+#define ENABLE_AUTO_BS_CMD                           (0x89000000)
+
+///
+/// Below here are commands going to the PC
+///
+
+
+
+// We can list another 256 commands, these are used by the PC only
+#define GENERIC_PCCMD         (0x00000000)
+#define COARSE_SYNC_PCCMD     (0x01000000)
+#define COARSE_DEBUG_PCCMD    (0x02000000)
+#define FPGA_BOOT_PCCMD       (0x03000000) // sent by higgs to let s-modem know a fpga has booted
+#define DEBUG_PCCMD           (0x04000000)
+#define TX_UNDERFLOW          (0x05000000) // Used for both TX and RX now
+#define RX_OVERFLOW           (0x06000000) // DEPRECATED
+#define COARSE_DEBUG_PROG_PCCMD (0x07000000)
+
+#define DEBUG_0_PCCMD         (0xde000000)
+#define DEBUG_1_PCCMD         (0xfe000000)
+#define DEBUG_2_PCCMD         (0xca000000)
+#define DEBUG_3_PCCMD         (0x05000000)
+#define DEBUG_4_PCCMD         (0x06000000)
+#define DEBUG_5_PCCMD         (0x07000000)
+#define DEBUG_6_PCCMD         (0x08000000)
+#define DEBUG_7_PCCMD         (0x09000000)
+#define DEBUG_8_PCCMD         (0x0a000000)
+#define DEBUG_9_PCCMD         (0x0b000000)
+#define DEBUG_10_PCCMD        (0x0c000000)
+#define DEBUG_11_PCCMD        (0x0d000000)
+#define DEBUG_12_PCCMD        (0x0e000000)
+#define DEBUG_13_PCCMD        (0x0f000000)
+#define DEBUG_14_PCCMD        (0xff000000)
+#define DEBUG_15_PCCMD        (0xfe000000)
+#define DEBUG_16_PCCMD        (0x10000000)
+#define DEBUG_17_PCCMD        (0x11000000)
+#define DEBUG_18_PCCMD        (0x12000000)
+#define DEBUG_19_PCCMD        (0x13000000)
+#define DEBUG_20_PCCMD        (0x14000000)
+#define DEBUG_21_PCCMD        (0x15000000)
+#define DEBUG_22_PCCMD        (0x16000000)
+#define DEBUG_23_PCCMD        (0x17000000)
+#define DEBUG_24_PCCMD        (0x18000000)
+#define DEBUG_25_PCCMD        (0x19000000)
+#define DEBUG_26_PCCMD        (0x1a000000)
+#define DEBUG_27_PCCMD        (0x1b000000)
+#define DEBUG_28_PCCMD        (0x1c000000)
+#define DEBUG_29_PCCMD        (0x1d000000)
+#define DEBUG_30_PCCMD        (0x1e000000)
+#define DEBUG_31_PCCMD        (0x1f000000)
+#define DEBUG_32_PCCMD        (0x88000000)
+#define DEBUG_33_PCCMD        (0xba000000)
+#define DEBUG_34_PCCMD        (0xbe000000)
+
+#define DMA_TORTURE_RESULTS  (0xf0000000)
+#define APP_ASSERT_PCCMD     (0xe0000000)
+
+#define FEEDBACK_ALIVE        (0X20000000)
+#define RX_CS00_ERROR_PCCMD   (0x21000000) // DUPLICATE DEPRECATED
+#define RX_ERROR_PCCMD        (0x21000000) // DUPLICATE
+#define RX_CS21_DID_ADJUST    (0x22000000)  // DEPRECATED removed when trunk was added on rx side
+#define NODEJS_RCP_PCCMD      (0x23000000)
+#define CS20_EPOC_REPORT_PCCMD (0x24000000) // DUPLICATE DEPRECATED
+#define CS02_EPOC_REPORT_PCCMD (0x24000000) // DUPLICATE DEPRECATED
+#define CS11_EPOC_REPORT_PCCMD (0x24000000) // DUPLICATE DEPRECATED
+#define TX_EPOC_REPORT_PCCMD   (0x24000000) // DUPLICATE
+#define CS20_PROGRESS_REPORT_PCCMD (0x25000000) // DUPLICATE DEPRECATED
+#define CS02_PROGRESS_REPORT_PCCMD (0x25000000) // DUPLICATE DEPRECATED
+#define CS11_PROGRESS_REPORT_PCCMD (0x25000000) // DUPLICATE DEPRECATED
+#define TX_PROGRESS_REPORT_PCCMD   (0x25000000) // DUPLICATE
+#define DMA_LAST_ERROR_PCCMD (0x26000000)
+#define CHECK_BOOTLOAD_PCCMD (0x27000000)
+#define TEST_STACK_RESULTS_PCCMD (0x28000000)
+#define FEEDBACK_HASH_PCCMD     (0x29000000)
+#define CS01_MAG_CHECK_PCCMD     (0x2a000000) // DUPLICATE DEPRECATED
+#define CS10_MAG_CHECK_PCCMD     (0x2a000000) // DUPLICATE DEPRECATED
+#define TX_MAG_CHECK_PCCMD       (0x2a000000) // DUPLICATE
+#define CHECK_ID_PCCMD       (0x2b000000)
+
+
+#define PERF_ETH_PCCMD        (0x30000000)
+#define PERF_02_PCCMD         (0x31000000)
+#define PERF_12_PCCMD         (0x32000000)
+#define PERF_00_PCCMD         (0x33000000)
+#define PERF_01_PCCMD         (0x34000000)
+#define PERF_11_PCCMD         (0x35000000)
+#define PERF_21_PCCMD         (0x36000000)
+#define PERF_31_PCCMD         (0x37000000)
+#define PERF_30_PCCMD         (0x38000000)
+#define PERF_20_PCCMD         (0x39000000)
+#define PERF_22_PCCMD         (0x3d000000)
+#define PERF_32_PCCMD         (0x3e000000)
+
+#define FEATURE_FLAGS_REP_PCCMD (0x40000000)
+#define FEATURE_FLAGS_REP_DONE_PCCMD (0x41000000)
+
+#define TDMA_REPLY_PCCMD     (0x42000000)
+#define MAPMOV_MODE_REPORT   (0x43000000)
+#define CS20_USERDATA_ERROR  (0x44000000) // DUPLICATE DEPRECATED
+#define CS02_USERDATA_ERROR  (0x44000000) // DUPLICATE DEPRECATED
+#define CS11_USERDATA_ERROR  (0x44000000) // DUPLICATE DEPRECATED
+#define TX_USERDATA_ERROR    (0x44000000) // DUPLICATE
+#define EPOC_REPLY_PCCMD     (0x45000000) // DEPRECATED with tickleAttachedProgress()
+// this is actually USERDATA_TIMING_FEEDBACK
+#define CS20_FILL_LEVEL_PCCMD  (0x46000000) // DUPLICATE DEPRECATED
+#define CS02_FILL_LEVEL_PCCMD  (0x46000000) // DUPLICATE DEPRECATED
+#define CS11_FILL_LEVEL_PCCMD  (0x46000000) // DUPLICATE DEPRECATED
+#define TX_FILL_LEVEL_PCCMD    (0x46000000) // DUPLICATE DEPRECATED (all copies are DEPRECATED)
+#define FILL_REPLY_PCCMD        (0x47000000)
+#define CS11_FB_REPORT_PCCMD  (0x48000000) // DUPLICATE DEPRECATED
+#define CS02_FB_REPORT_PCCMD  (0x48000000) // DUPLICATE DEPRECATED
+#define TX_FB_REPORT_PCCMD    (0x48000000) // DUPLICATE
+#define TX_UD_LATENCY_PCCMD    (0x49000000)
+#define CS20_FB_REPORT2_PCCMD  (0x4b000000) // DUPLICATE DEPRECATED
+#define CS02_FB_REPORT2_PCCMD  (0x4b000000) // DUPLICATE DEPRECATED
+#define CS11_FB_REPORT2_PCCMD  (0x4b000000) // DUPLICATE DEPRECATED
+#define TX_FB_REPORT2_PCCMD    (0x4b000000) // DUPLICATE
+#define CS20_REPORT_STATUS_PCCMD  (0x4c000000) // DUPLICATE DEPRECATED
+#define CS02_REPORT_STATUS_PCCMD  (0x4c000000) // DUPLICATE DEPRECATED
+#define CS11_REPORT_STATUS_PCCMD  (0x4c000000) // DUPLICATE DEPRECATED
+#define TX_REPORT_STATUS_PCCMD    (0x4c000000) // DUPLICATE
+
+#define TX_PARSE_GOT_VECTOR_PCCMD (0x4e000000)
+
+#define ETH_STATUS_PCCMD      (0x4d000000)
+#define READBACK_HASH_PCCMD      (0x4f000000)
+#define SFO_OVERFLOW_PCCMD   (0x50000000)
+#define GENERIC_READBACK_PCCMD (0x51000000)
+#define RX_FINE_SYNC_OVERFLOW_PCCMD (0x52000000)
+#define POWER_RESULT_PCCMD (0x53000000)
+#define UART_READOUT_PCCMD (0x54000000)
+#define EXFIL_READOUT_PCCMD (0x55000000)
+#define LAST_USERDATA_PCCMD (0x56000000)
+#define TIMER_RESULT_PCCMD  (0x57000000)
+#define SELF_SYNC_REPLY_PCCMD (0x58000000)
+#define RX_COUNTER_SYNC_PCCMD (0x59000000)
+#define DEBUG_OTA_FRAME_PCCMD (0x5a000000)
+#define DEBUG_OTA_FRAME2_PCCMD (0x5b000000)
+#define INVALID_SFO_CFO_PCCMD (0x5c000000)
+#define DEBUG_COARSE_COUNTER_PCCMD (0x5d000000)
+#define FEEDBACK_EQ_STATUS_PCCMD (0x5e000000)
+#define FEEDBACK_EQ_GAP_PCCMD (0x5f000000)
+#define FINE_SYNC_RAW_PCCMD (0x60000000)
+
+
+
+
+// increase for more callbacks
+#define RINGBUS_MAX_CALLBACKS (32)
+
+#ifndef VERILATE_TESTBENCH
+
+// do not define variables in .h files, instead put it in a .c file
+// and put an extern here if you must have raw access like this
+extern unsigned int global_dma_data_len;
+
+
+typedef struct Ringbus {
+    unsigned char addr;
+    unsigned int data;
+} Ringbus;
+void send_cmd(Ringbus *ringbus);
+void read_cmd(Ringbus *ringbus);
+void execute_cmd(const unsigned int type, const unsigned int data);
+void check_ring(Ringbus *ringbus);
+void ring_register_callback(void (*cb)(unsigned int), unsigned int mask);
+void ringbus_catch_incoming_callback(void (*cb)(unsigned int));
+void inject_ringbus(const unsigned int word);
+void _ring_test(const unsigned int data);
+#endif
+
+
+#endif
+
