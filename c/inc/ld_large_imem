@@ -1,0 +1,118 @@
+OUTPUT_ARCH( "riscv" )
+
+/* Total memory is 32768 bytes long */
+
+
+
+/*
+Declare types of memory, these can be further subdivide betwen i/d memory
+with no penalty.
+Each section gets it's own %full report
+
+Each origin, should be the sum of the previous origin and length
+*/
+START_LOC = 0x0000;
+IMEM_LEN = 0x7400;
+DMEM_LEN = 0x0800;
+BOOT_LEN = 0x03f8;
+PASS_FAIL_LEN = 0x0008;
+
+V_MEM_START = 0x40000;
+V_MEM_LEN = 0x40000;
+
+
+MEMORY {
+  imem (R)       : ORIGIN = START_LOC                            , LENGTH = IMEM_LEN
+  dmem (RW)      : ORIGIN = IMEM_LEN                             , LENGTH = DMEM_LEN
+  bootloader (RW): ORIGIN = IMEM_LEN + DMEM_LEN                  , LENGTH = BOOT_LEN
+  passfail (RW)  : ORIGIN = IMEM_LEN + DMEM_LEN + BOOT_LEN       , LENGTH = PASS_FAIL_LEN
+  vmem (RW)      : ORIGIN = V_MEM_START                          , LENGTH = V_MEM_LEN
+}
+
+SECTIONS
+{
+  . = 0x000;
+  .crt_section :
+  {
+   . = ALIGN(4);
+   *crt.o(.text*); /* without this main.c code goes first and breaks reset vector (legacy) */
+   *(.init.text*); /* without this main.c code goes first and breaks reset vector */
+   *(.text*);
+  } > imem
+
+  __imem_size = SIZEOF(.crt_section);
+
+  .var_space :
+  {
+    . = ALIGN(4);
+    *(.sdata .sdata.*);
+    *(.data .data.*);
+    *(.sbss*)
+  } > dmem
+  
+  .will_zero :
+  {
+    . = ALIGN(4);
+    __bss_vma_start = .;
+  
+    *(.bss*)
+    *(COMMON)
+  
+    . = ALIGN(4);
+    __bss_vma_end = .;
+  } > dmem
+
+  /*
+  This is the end of memory that the linker knows about
+  This will grow with new global variables for instance
+  */
+  . = ALIGN(4);
+  __dedicated_mem_end = .;
+
+  /*
+  Because we have a dedicated memory section above, these will never change addresses
+  with general program changes.  these will only move if memory section is edited above
+
+  These allow us to test the processor and have a dedicated place for grabbing stuff
+  */
+  .hard_pointers :
+  {
+    . = ALIGN(4);
+
+    __pass_fail_0 = .;
+    KEEP (*(__pass_fail_0))
+    . = __pass_fail_0 + 4;
+    
+    __pass_fail_1 = .;
+    KEEP (*(__pass_fail_1))
+    . = __pass_fail_1 + 4;
+  } > passfail
+
+
+
+
+  /*
+  This is the end of the dmem MEMORY section above
+  */
+  __sp_start = ORIGIN(dmem) + LENGTH(dmem) - 4 ;
+  __stack_size = __sp_start - __dedicated_mem_end;
+
+  .boot_section :
+  {
+    . = ALIGN(4);
+    *(.bootloader.entry .bootloader.entry.*);
+    *(.bootloader .bootloader.*);
+    *(.bootloader.data .bootloader.data.*);
+
+  } > bootloader
+
+  .vmem_constant_section :
+  {
+    . = ALIGN(4);
+    __vmem_start = .;
+    *(.vmem_offset.data .vmem_offset.data.*);
+    *(.vmem_constant.data .vmem_constant.data.*);
+    __vmem_end = .;
+  } > vmem
+
+}
