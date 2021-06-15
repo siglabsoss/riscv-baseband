@@ -1,0 +1,16 @@
+/obj_dir
+
+/*.vcd
+/*.logTrace
+impl1
+
+
+
+/scalar0.mif
+/scalar1.mif
+/scalar2.mif
+/scalar3.mif
+
+
+test_output.csv
+
