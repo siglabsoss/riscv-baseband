@@ -1,11 +1,6 @@
 #ifndef __RINGBUS2_POST_H__
 #define __RINGBUS2_POST_H__
 
-/// This file includes function definitions which usually is a nono
-/// This was done for historical reasons before OUR_RING_ENUM was added at the compiler
-/// argument level
-/// 
-
 
 #ifndef __RINGBUS2_PRE_H__
 #error "you must include ringbus2_pre.h before including rinbus2_post.h"

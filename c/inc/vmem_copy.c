@@ -38,10 +38,6 @@ void vmem_copy_words_slow(const unsigned int input_dma, const unsigned int outpu
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wattributes"
 
-///
-/// Returns N bits starting from the zero position (lsb)
-/// Returned value is a type uint16_t
-///
 inline uint16_t __attribute__((always_inline)) grow_bits_16(unsigned count) {
     switch(count) {
         default:
@@ -256,9 +252,9 @@ V14    some ones (for subtracting bank by 1 for the negative hanging over)
 
 
     // how far left of 16 is the output
-    const uint16_t output_skew = 16 - (output_dma % 16);
-    const uint16_t input_skew  = 16 - (input_dma  % 16);
-    const uint16_t delta_skew  = (16 - (output_dma % 16) + (input_dma % 16)) % 16;
+    uint16_t output_skew = 16 - (output_dma % 16);
+    uint16_t input_skew  = 16 - (input_dma  % 16);
+    uint16_t delta_skew  = (16 - (output_dma % 16) + (input_dma % 16)) % 16;
 
     // using store permutation we shift by N to the left
     const uint16_t s_perm = (delta_skew << 12) & 0xf000;

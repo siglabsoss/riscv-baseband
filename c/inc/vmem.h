@@ -31,18 +31,18 @@ unsigned int vmem_load_offset = x;
 // these should have been named _ROW_ originaly
 //
 #define VMEM_ADDRESS(x) VMEM_ROW_ADDRESS(x)
-#define VMEM_ROW_ADDRESS(x) ((((unsigned int)(x))-VECTOR_MEM_START)>>6)
+#define VMEM_ROW_ADDRESS(x) ((((unsigned int)x)-VECTOR_MEM_START)>>6)
 
 #define REVERSE_VMEM_ADDRESS(x) REVERSE_VMEM_ROW_ADDRESS(x)
 #define REVERSE_VMEM_ROW_ADDRESS(x) ((unsigned int *)((((unsigned int)(x)) << 6) + VECTOR_MEM_START))
 
 // takes an riscv address, and converts it into a DMA address
-#define VMEM_DMA_ADDRESS(x) ((((unsigned int)(x))-VECTOR_MEM_START)>>2)
+#define VMEM_DMA_ADDRESS(x) ((((unsigned int)x)-VECTOR_MEM_START)>>2)
 
-#define REVERSE_VMEM_DMA_ADDRESS(x) ((unsigned int *)(((unsigned int)((x)<<2))+VECTOR_MEM_START))
+#define REVERSE_VMEM_DMA_ADDRESS(x) ((unsigned int *)(((unsigned int)(x<<2))+VECTOR_MEM_START))
 
-#define VMEM_DMA_ADDRESS_TO_ROW(x) (((unsigned int)(x))>>4)
-#define VMEM_ROW_ADDRESS_TO_DMA(x) (((unsigned int)(x))<<4)
+#define VMEM_DMA_ADDRESS_TO_ROW(x) (((unsigned int)x)>>4)
+#define VMEM_ROW_ADDRESS_TO_DMA(x) (((unsigned int)x)<<4)
 
 
 #endif

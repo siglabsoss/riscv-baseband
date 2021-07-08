@@ -150,9 +150,8 @@ SECTIONS
   {
      . = ALIGN(4); 
      __blfun_start = .; 
-    KEEP(*(.blfun.entry .blfun.entry.*));
-    KEEP(*(.blfun .blfun.*));
-    KEEP(*(.blfun.data .blfun.data.*));
+    *(.bootload_fun.data .bootload_fun.data.*);
+    *(.bootload_fun.init.text*);
      __blfun_end = .; 
   } > blfun
 

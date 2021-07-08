@@ -13,7 +13,7 @@
 // to catch errors
 #define FEEDBACK_VEC_FINE_SYNC (1)
 #define FEEDBACK_VEC_TX_EQ     (2)
-#define FEEDBACK_VEC_SCHEDULE  (3)      // FIXME deprecated
+#define FEEDBACK_VEC_SCHEDULE  (3)
 #define FEEDBACK_VEC_SCHEDULE_META  (4)
 #define FEEDBACK_VEC_TX_USER_DATA (5)
 #define FEEDBACK_VEC_DEMOD_DATA (6)
@@ -37,7 +37,6 @@
 #define FEEDBACK_VEC_EQ_ANALOG (25)         // Caught by fb_eq_split
 #define FEEDBACK_VEC_EQ_CORRECTION  (26)         // Caught by fb_eq_split
 #define FEEDBACK_VEC_JS_INTERNAL (27)
-#define FEEDBACK_VEC_TX_EQ_1   (28)
 
 #define FEEDBACK_STREAM_DEFAULT (1)
 #define FEEDBACK_STREAM_ALL_SC (2)

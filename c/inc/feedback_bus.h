@@ -196,6 +196,7 @@ void fill_feedback_ringbus_1( feedback_frame_ringbus_filled_t *f, const unsigned
 void fill_feedback_ringbus_2( feedback_frame_ringbus_filled_t *f, const unsigned int enum0, const unsigned int data0, const unsigned int enum1, const unsigned int data1 );
 void fill_feedback_ringbus_3( feedback_frame_ringbus_filled_t *f, const unsigned int enum0, const unsigned int data0, const unsigned int enum1, const unsigned int data1, const unsigned int enum2, const unsigned int data2 );
 bool feedback_type_valid(const feedback_frame_t *v);
+uint32_t feedback_word_length(const feedback_frame_t *v, bool *error);
 
 
 void init_feedback_stream(feedback_frame_stream_filled_t *v, const unsigned int destinations, const bool deliver_higgs, const bool deliver_pc, const unsigned int stype);
@@ -233,10 +234,8 @@ std::string lookup_ringbus_enum( unsigned int v, bool upper);
 void print_feedback_ringbus(const feedback_frame_ringbus_t *v);
 void print_feedback_generic(const feedback_frame_t *v);
 
-void set_mapmov_epoc_timeslot(std::vector<uint32_t>& rhs, const epoc_timeslot_t& a );
 void set_mapmov_epoc_timeslot(std::vector<uint32_t>& rhs, const uint32_t epoc, const uint32_t timeslot );
 void set_mapmov_epoc_frames(std::vector<uint32_t>& rhs, const uint32_t epoc, const uint32_t timeslot );
-void set_mapmov_lifetime_32(std::vector<uint32_t>& rhs, const uint32_t lifetime_32);
 
 void feedback_update_length_field(std::vector<uint32_t>& rhs);
 
@@ -259,7 +258,6 @@ std::vector<uint32_t> feedback_ringbus_packet(
 void printFillLevelReply(const uint32_t word, const int target);
 
 std::string getErrorStringFeedbackBusParse(const uint32_t word, uint32_t* critical_error = 0);
-uint32_t getErrorFeedbackBusParseCritical(const uint32_t word);
 std::string getErrorStringTestStack(const uint32_t word);
 
 std::vector<uint32_t> feedback_flush_packet(const uint32_t zeros, const uint32_t other = 3);
@@ -271,13 +269,6 @@ std::vector<uint32_t> feedback_frame_vec_to_vector(const feedback_frame_vector_t
 std::vector<uint32_t> get_check_awake_packet(const unsigned size = 1);
 
 uint32_t feedback_hash(const feedback_frame_t *v, fb_hash_t cb );
-
-uint32_t feedback_word_length(const feedback_frame_t *v, bool* const error, const uint32_t enabled_subcarriers = 0, const uint32_t constellation = 0, bool* const was_ud = 0);
-
-uint32_t feedback_mapmov_reverse_size(
-    const uint32_t custom_size,
-    const uint32_t enabled_subcarriers,
-    const uint32_t constellation);
 
 #endif
 #endif
