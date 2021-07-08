@@ -47,23 +47,13 @@ void read_cmd(Ringbus *ringbus){
     CSR_READ(RINGBUS_READ_DATA, ringbus->data);
 }
 
-
-// normally we would include ringbus2_post.h but due to bad .c/h isolation
-// I will just copy this here
-#define RING_ADDR_PC_RB_TEST_COPY   (((RING_ENUM_PC   - OUR_RING_ENUM - 1) + (RING_BUS_LENGTH*2)) % RING_BUS_LENGTH)
-
-// previously this read the ringbus.addr from the input data
-// however it was masked wrong and actually replied to the WRONG fpga
-// causing a chain which eventually hit eth
-// now we hardcode back to eth
 void _ring_test(const unsigned int data){
     Ringbus ringbus;
-    ringbus.addr = RING_ADDR_PC_RB_TEST_COPY;
+    unsigned int fpga_bit_mask = 0x7;
+    ringbus.addr = data&fpga_bit_mask;
     ringbus.data = data;
     send_cmd(&ringbus);
 }
-
-#undef RING_ADDR_PC_RB_TEST_COPY
 
 void _dma_in(unsigned int data){
     CSR_WRITE(DMA_0_START_ADDR, 0);

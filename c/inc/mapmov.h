@@ -19,8 +19,6 @@
 #define MAPMOV_SUBCARRIER_320             (7)
 #define MAPMOV_SUBCARRIER_640_LIN         (8)
 #define MAPMOV_SUBCARRIER_512_LIN         (9)
-#define MAPMOV_SUBCARRIER_64_LIN         (10)
-
 
 #define AIRPACKET_CODE_UNCODED               (0)
 #define AIRPACKET_CODE_REED_SOLOMON          (1)

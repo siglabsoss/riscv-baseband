@@ -12,13 +12,6 @@
 #endif
 
 
-//////////////////////////////////////////
-//
-// Shared functions
-//
-
-
-
 void default_schedule(schedule_t *o) {
 
     set_id(o, 1);
@@ -98,9 +91,6 @@ void schedule_get_timeslot2(
     *accumulated_progress = sample;
 }
 
-// note SCHEDULE_LENGTH is 512 and better named timeslot length
-// will truncate off up to 512 frames meaning you can't convert back and
-// forth losslessly 
 epoc_timeslot_t schedule_frame_to_timeslot(const epoc_frame_t y) {
     epoc_timeslot_t x;
 
@@ -109,49 +99,13 @@ epoc_timeslot_t schedule_frame_to_timeslot(const epoc_frame_t y) {
     return x;
 }
 
-// non lossless version
-epoc_frame_t schedule_timeslot_to_frame(const epoc_timeslot_t y) {
-    epoc_frame_t x;
-
-    x.epoc = y.epoc;
-    x.frame = y.timeslot * SCHEDULE_LENGTH;
-    return x;
-}
-
-bool schedule_frame_equal(const epoc_frame_t a, const epoc_frame_t b) {
-    return (a.epoc == b.epoc) && (a.frame == b.frame);
-}
-
-bool schedule_timeslot_equal(const epoc_timeslot_t a, const epoc_timeslot_t b) {
-    return (a.epoc == b.epoc) && (a.timeslot == b.timeslot);
-}
-
-
-/// generates a ringbus (minus the type) that can be passed to schedule_parse_delta_ringbus()
-/// which will return a delta of these two counters, signed. limited to 24 bits (ie it's a int24_t)
-/// warning when counters are larger we give incorrect results instead of zero or some error condition
-uint32_t schedule_report_delta_ringbus(const uint32_t ud, const uint32_t lifetime) {
-    int32_t frame_delta = ((ud) - lifetime);
-    return (uint32_t)frame_delta&0xffffff;
-}
-
-/// returns an int24_t worth of delta beween the two counters passed to schedule_report_delta_ringbus()
-/// return value is sign extended into a int32_t
-int32_t schedule_parse_delta_ringbus(const uint32_t rb) {
-    const uint32_t val = rb & 0xffffff;
-
-    int32_t sval = ((int32_t)val<<8)>>8;  // sign extend
-
-    return sval;
-}
-
 
 
 #ifndef VERILATE_TESTBENCH
 
 //////////////////////////////////////////
 //
-// Vex ONLY functions
+// Vex functions
 //
 
 
@@ -159,7 +113,7 @@ int32_t schedule_parse_delta_ringbus(const uint32_t rb) {
 
 //////////////////////////////////////////
 //
-// TestBench / S-Modem ONLY functions
+// TestBench / S-Modem functions
 //
 
 void print_epoc_frame_t(const epoc_frame_t& f) {
@@ -212,8 +166,9 @@ epoc_frame_t adjust_frames_to_schedule(const epoc_frame_t& old, const int64_t fr
 
     if( sign == -1 ) {
         for(int64_t i = 0; i > frames; i--) {
+
             if(ret.frame == 0) {
-                ret.epoc -= 1;
+                ret.epoc += 1;
                 ret.frame += SCHEDULE_FRAMES;
             } 
 
@@ -236,22 +191,22 @@ epoc_frame_t adjust_frames_to_schedule(const epoc_frame_t& old, const int64_t fr
 }
 
 // returns a - b
-int64_t schedule_delta_frames(const epoc_frame_t& a, const epoc_frame_t& b) {
+long schedule_delta_frames(const epoc_frame_t& a, const epoc_frame_t& b) {
     // long unsigned 
-    return (int64_t)schedule_to_pure_frames(a) - (int64_t)schedule_to_pure_frames(b);
+    return (long)schedule_to_pure_frames(a) - (long)schedule_to_pure_frames(b);
 }
 
-uint64_t schedule_to_pure_frames(const epoc_frame_t& a) {
+long unsigned schedule_to_pure_frames(const epoc_frame_t& a) {
     // long unsigned ret = 0;
 
-    return ((uint64_t)a.epoc * (uint64_t)SCHEDULE_FRAMES) + (uint64_t)a.frame;
+    return ((long unsigned)a.epoc * (long unsigned)SCHEDULE_FRAMES) + (long unsigned)a.frame;
 }
 
-epoc_frame_t pure_frames_to_epoc_frame(const uint64_t frames) {
+epoc_frame_t pure_frames_to_epoc_frame(const long unsigned frames) {
     epoc_frame_t ret;
 
-    const uint64_t r0 = frames / (uint64_t)SCHEDULE_FRAMES;
-    const uint64_t r1 = frames % (uint64_t)SCHEDULE_FRAMES;
+    const long unsigned r0 = frames / (long unsigned)SCHEDULE_FRAMES;
+    const long unsigned r1 = frames % (long unsigned)SCHEDULE_FRAMES;
 
     ret.epoc = r0;
     ret.frame = r1;
@@ -259,7 +214,7 @@ epoc_frame_t pure_frames_to_epoc_frame(const uint64_t frames) {
     return ret;
 }
 
-/// only accepts positive values
+// only accepts positive values
 epoc_frame_t add_frames_to_schedule(const epoc_frame_t& old, const uint32_t frames) {
     return adjust_frames_to_schedule(old, (int32_t)frames);
 }

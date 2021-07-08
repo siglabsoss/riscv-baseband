@@ -1,9 +1,6 @@
 #ifndef __FFT_1024_3914_MOD_H__
 #define __FFT_1024_3914_MOD_H__
 
-
-#define FFT_STAGES (5)
-
 // set if you want: 
 // RECORD_FFT_EXECUTION_TIME
 

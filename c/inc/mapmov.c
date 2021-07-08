@@ -333,7 +333,6 @@ void partial_mapmov_mode_128(void) {
 }
 
 void mapmov_mode_128(void) {
-    SET_REG(x3, 0x7ffff);
     start_partial(&partial_mapmov_mode_128);
 }
 
@@ -515,55 +514,6 @@ void mapmov_mode_512_lin(void) {
     mapmov_latch_settings(did_activate, 0, 1023);
 }
 
-
-void mapmov_mode_64_lin(void) {
-    // const unsigned int pilot = 0x00002000;
-
-    CSR_WRITE(MAPMOV_TRIM_START, 0);
-    CSR_WRITE(MAPMOV_TRIM_END, 1023);
-
-    unsigned int did_activate = 0;
-
-    for(unsigned int i = 0; i < 32; i++) {
-        unsigned bit_mask = 0;
-        for(unsigned int j = 0; j < 32; j++) {
-            const unsigned int sc = (i*32) + j;
-
-            bit_mask = bit_mask >> 1;
-
-            if( (sc >= (16) && sc < (80)) ) {
-                bit_mask |= (0x1<<31);
-                did_activate++;
-                SET_REG(x3, sc);
-            }
-        }
-
-        if( i == 0 ) {
-            bit_mask &= ~0x1;
-        }
-
-        // a fn() not a macro
-        CSR_WRITE_MAPMOV_ACTIVE(i, bit_mask);
-    }
-
-
-    // manually do zero
-    CSR_WRITE(MAPMOV_PILOT_RAM_ADDR, 0);
-    CSR_WRITE(MAPMOV_PILOT_RAM_WDATA, 0x0);
-    CSR_WRITE_ZERO(MAPMOV_PILOT_RAM_WE);
-
-    // skip zero
-    for(unsigned int sc = 1; sc < 1024; sc++) {
-        CSR_WRITE(MAPMOV_PILOT_RAM_ADDR, sc);
-        CSR_WRITE_ZERO(MAPMOV_PILOT_RAM_WDATA);
-        CSR_WRITE_ZERO(MAPMOV_PILOT_RAM_WE);
-    }
-
-    mapmov_latch_settings(did_activate, 0, 1023);
-}
-
-
-
 void mampmov_mode_debug(void) {
     CSR_WRITE(MAPMOV_TRIM_START, 0);
     CSR_WRITE(MAPMOV_TRIM_END, 1023);
@@ -641,9 +591,6 @@ void mapmov_choose_mode(const unsigned int mode, const unsigned int reset_module
             break;
         case MAPMOV_SUBCARRIER_512_LIN:
             mapmov_mode_512_lin();
-            break;
-        case MAPMOV_SUBCARRIER_64_LIN:
-            mapmov_mode_64_lin();
             break;
         default:
             mode_found = 0;

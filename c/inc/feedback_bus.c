@@ -156,29 +156,8 @@ bool feedback_type_valid(const feedback_frame_t *v) {
 // this is because the consumer should advance 1 word
 // pass a *error which will be set if something looks wrong with the length
 // the returned length will probably be invalid in the case that error is set
-// pass enabled_subcarriers as non zero to enable parsing of userdata lengths
-uint32_t feedback_word_length(
-    const feedback_frame_t *v,
-    bool* const error,
-    const uint32_t enabled_subcarriers,
-    const uint32_t constellation,
-    bool* const was_ud) {
-
-    // we can determine if userdata parsing is enabled if both 
-    // enabled_subcarriers, constellation are set
-    // the problem is that constellation can be 0 and valid
-    // so we only check enabled_subcarriers
-
-    const bool ud_enabled = enabled_subcarriers != 0;
-
-    const feedback_frame_vector_t* const vvec = (const feedback_frame_vector_t* const) v;
+uint32_t feedback_word_length(const feedback_frame_t *v, bool *error) {
     *error = false;
-
-
-    if(was_ud) {
-        *was_ud = false;
-    }
-
     switch(v->type) {
         case FEEDBACK_TYPE_STREAM:
         case FEEDBACK_TYPE_VECTOR:
@@ -186,28 +165,10 @@ uint32_t feedback_word_length(
                 *error = true;
                 return 1;
             }
-
-            if(vvec->vtype != FEEDBACK_VEC_TX_USER_DATA) {
-                if(v->length > FEEDBACK_MAX_LENGTH) {
-                    *error = true;
-                    return 1;
-                }
+            if(v->length > FEEDBACK_MAX_LENGTH) {
+                *error = true;
+                return 1;
             }
-
-            if( ud_enabled && (vvec->vtype == FEEDBACK_VEC_TX_USER_DATA) ) {
-                const uint32_t pre_mapmov_size =
-                    feedback_mapmov_reverse_size(
-                        v->length
-                        ,enabled_subcarriers
-                        ,constellation);
-
-                if(was_ud) {
-                    *was_ud = true;
-                }
-
-                return pre_mapmov_size+FEEDBACK_HEADER_WORDS;
-            }
-
             return v->length;
             break;
 
@@ -294,7 +255,7 @@ void print_feedback_ringbus(const feedback_frame_ringbus_t *v) {
 }
 
 
-static void print_feedback_stream(const feedback_frame_stream_t *v) {
+void print_feedback_stream(const feedback_frame_stream_t *v) {
     std::cout << "Type: Stream" << std::endl;
     std::cout << "Stream Tag: " << v->stype << std::endl;
     unsigned num_words = v->length - FEEDBACK_HEADER_WORDS;
@@ -326,7 +287,7 @@ static void print_feedback_stream(const feedback_frame_stream_t *v) {
 
 
 
-static void print_feedback_vector(const feedback_frame_vector_t *v) {
+void print_feedback_vector(const feedback_frame_vector_t *v) {
     std::cout << "Type: Vector" << std::endl;
     std::cout << "Vector Tag: " << v->vtype << std::endl;
     unsigned num_words = v->length - FEEDBACK_HEADER_WORDS;
@@ -447,12 +408,6 @@ std::vector<uint32_t> feedback_vector_packet_mapmov(
     return out;
 }
 
-void set_mapmov_epoc_timeslot(std::vector<uint32_t>& rhs, const epoc_timeslot_t& a ) {
-
-    rhs[5] = (a.timeslot*SCHEDULE_LENGTH);
-    rhs[6] = a.epoc;
-}
-
 void set_mapmov_epoc_timeslot(std::vector<uint32_t>& rhs, const uint32_t epoc, const uint32_t timeslot ) {
     rhs[5] = (timeslot*SCHEDULE_LENGTH);
     rhs[6] = epoc;
@@ -461,11 +416,6 @@ void set_mapmov_epoc_timeslot(std::vector<uint32_t>& rhs, const uint32_t epoc, c
 void set_mapmov_epoc_frames(std::vector<uint32_t>& rhs, const uint32_t epoc, const uint32_t timeslot ) {
     rhs[5] = timeslot;
     rhs[6] = epoc;
-}
-
-void set_mapmov_lifetime_32(std::vector<uint32_t>& rhs, const uint32_t lifetime_32) {
-    rhs[5] = lifetime_32; //                                      seq
-    // rhs[6] = epoc; // could be used for a lifetime_64 update   seq2
 }
 
 // pass custom_size, we assume you know what you're doing
@@ -602,30 +552,6 @@ std::vector<uint32_t> feedback_vector_mapmov_scheduled_sized_frames(
         epoc,
         constellation
         );
-}
-
-/// Pass the feedback bus size after:
-///  feedback_vector_mapmov_scheduled_sized_frames
-///  feedback_vector_packet
-///
-/// This recovers the original size of the data
-/// Does not include FEEDBACK_HEADER_WORDS, you must add this if you wish
-uint32_t feedback_mapmov_reverse_size(
-    const uint32_t custom_size,
-    const uint32_t enabled_subcarriers,
-    const uint32_t constellation) {
-
-    const int header = FEEDBACK_HEADER_WORDS;
-    const double bits_per_subcarrier = feedback_bits_per_constellation(constellation);
-    
-    // reversed from:
-    // const uint32_t custom_size = header +
-    //     std::ceil(((double)packet_tfm.size()*32.0/bits_per_subcarrier) / (double)enabled_subcarriers)*1024;
-
-    const uint32_t val2 = (custom_size - header) / 1024 ;
-    const uint32_t val = val2 * bits_per_subcarrier * enabled_subcarriers / 32;
-
-    return val;
 }
 
 
@@ -881,11 +807,6 @@ void printFillLevelReply(const uint32_t word, const int target) {
 
 // }
 
-/// This function defines a set of "implied enums"
-/// the numbers after the ringbus are defined here, and must be matched in cs11
-/// there is no official header for these and they are magic numbers
-/// @param word - MUST have ringbus type (note that most callbacks in our code strip this)
-/// @param [inout] pointer to number signifying a few critical error conditions
 std::string getErrorStringFeedbackBusParse(const uint32_t word, uint32_t* critical_error) {
     
     uint32_t funny_dmode =      (word & 0xffff00) >> 8;
@@ -893,13 +814,12 @@ std::string getErrorStringFeedbackBusParse(const uint32_t word, uint32_t* critic
     // mask we feed into the switch statement
     uint32_t switch_on = (word & 0xff0000ff);
 
-    const std::string who = " CS11"; // has a space
-
 
     std::ostringstream os;
 
-    os  << "--------------------------------------------\n"
-        << " - ";
+    os << "--------------------------------------------" << std::endl;
+
+    os << " - ";
 
     uint32_t local_crit = 0;
 
@@ -907,12 +827,10 @@ std::string getErrorStringFeedbackBusParse(const uint32_t word, uint32_t* critic
         case (TX_USERDATA_ERROR | 2):
             os << " Requested packet was in the past";
             break;
-        case (TX_USERDATA_ERROR | 3):
-            os << " Packet came way too early, dumping";
+        case (TX_USERDATA_ERROR | 7):
+            os << " Epoc was correct, but timeslot was in the past";
             break;
         case (TX_USERDATA_ERROR | 4):
-            /// due to changing to lifetime_32 based scheduling
-            /// cs11 can never send this error message now
             os << " Schedule timing was ok, but can_tx is false";
             break;
         case (TX_USERDATA_ERROR | 5):
@@ -922,11 +840,6 @@ std::string getErrorStringFeedbackBusParse(const uint32_t word, uint32_t* critic
             break;
         case (TX_USERDATA_ERROR | 6):
             os << " Packet came on time, but underflowed during transmission. We underflowed after sending: " << funny_dmode;
-            break;
-        case (TX_USERDATA_ERROR | 7):
-            /// due to changing to lifetime_32 based scheduling
-            /// cs11 can never send this error message now
-            os << " Epoc was correct, but timeslot was in the past";
             break;
         case (TX_USERDATA_ERROR | 8):
             os << " user_data_callback() got called but cs20 cirbuf was full";
@@ -965,30 +878,27 @@ std::string getErrorStringFeedbackBusParse(const uint32_t word, uint32_t* critic
             local_crit = 3;
             break;
         case (TX_USERDATA_ERROR | 0x11):
-            os << who << " did not handle Vector type upper 0x" << HEX32_STRING(funny_dmode<<16) << "";
+            os << " CS20 did not handle Vector type upper 0x" << HEX32_STRING(funny_dmode<<16) << "";
             break;
         case (TX_USERDATA_ERROR | 0x12):
-            os << who << " did not handle Vector type lower 0x" << HEX32_STRING(funny_dmode) << "";
+            os << " CS20 did not handle Vector type lower 0x" << HEX32_STRING(funny_dmode) << "";
             local_crit = 3;
             break;
         case (TX_USERDATA_ERROR | 0x13):
-            os << who << " did not handle Stream type upper 0x" << HEX32_STRING(funny_dmode<<16) << "";
+            os << " CS20 did not handle Stream type upper 0x" << HEX32_STRING(funny_dmode<<16) << "";
             break;
         case (TX_USERDATA_ERROR | 0x14):
-            os << who << " did not handle Stream type lower 0x" << HEX32_STRING(funny_dmode) << "";
+            os << " CS20 did not handle Stream type lower 0x" << HEX32_STRING(funny_dmode) << "";
             local_crit = 3;
             break;
         case (TX_USERDATA_ERROR | 0x15):
-            os << who << " fb_ring_queue->occupancy is illegal large 0x" << HEX32_STRING(funny_dmode<<16) << "";
+            os << " CS20 fb_ring_queue->occupancy is illegal large 0x" << HEX32_STRING(funny_dmode<<16) << "";
             break;
         case (TX_USERDATA_ERROR | 0x16):
             os << " Readback upper 0x" << HEX32_STRING(funny_dmode<<16) << "";
             break;
         case (TX_USERDATA_ERROR | 0x17):
             os << " Readback lower 0x" << HEX32_STRING(funny_dmode) << "";
-            break;
-        case (TX_USERDATA_ERROR | 0x18):
-            os << " Cooked Data Type is in incorrect mode (" << funny_dmode << ") packet dumped.  Expected 2";
             break;
 
         default:
@@ -1001,18 +911,11 @@ std::string getErrorStringFeedbackBusParse(const uint32_t word, uint32_t* critic
     }
 
 
-    os << "\n--------------------------------------------\n";
+    os << std::endl << "--------------------------------------------" << std::endl;
 
     // os << "- ";
     // os << "dec: " << 15 << " hex: " << std::hex << 15 << std::endl;
     return  os.str();
-}
-
-// mirrors getErrorStringFeedbackBusParse but drops string for easy js access
-uint32_t getErrorFeedbackBusParseCritical(const uint32_t word) {
-    uint32_t out;
-    getErrorStringFeedbackBusParse(word, &out);
-    return out;
 }
 
 // goes with functions from stack_test.c

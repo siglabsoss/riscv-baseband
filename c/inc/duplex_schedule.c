@@ -101,15 +101,6 @@ int32_t duplex_dl_beam_pilot_phase(const uint32_t i) {
     }
 }
 
-// which duplex progress is ok to start data on, based on our role?
-uint32_t duplex_start_data_for_role(const duplex_timeslot_t* const dts) {
-    if( dts->role == DUPLEX_ROLE_RX ) {
-        return DUPLEX_START_FRAME_RX;
-    } else {
-        return DUPLEX_START_FRAME_TX;
-    }
-}
-
 
 
 // cs11 uses this to determine which phase of p
@@ -147,85 +138,6 @@ int32_t duplex_dl_pilot_transmitter(const uint32_t i) {
             break;
     }
 }
-
-/// is our specific role allowed to send userdata?
-/// @param[in] dts - duplex schedule
-/// @param[in] i - duplex_progress
-/// @param[in] flip - flip the role of tx / rx in response
-/// Pass false if you are in the TX chain, true for RX chain
-bool duplex_do_userdata(const duplex_timeslot_t* const dts, const uint32_t i, const bool flip) {
-    // are we tx or rx?
-    bool as_tx = (dts->role != DUPLEX_ROLE_RX);
-    
-    // were we asked to flip?
-    // this line is the same as
-    // if( flip ) {
-    //   as_tx = !as_tx;
-    // }
-    //
-    as_tx ^= flip;
-    
-    if( as_tx && (i >= (DUPLEX_START_FRAME_TX) ) ) {
-        return true;
-    }
-    if( !as_tx ) {
-        if( ((i >= DUPLEX_START_FRAME_RX)&&(i<DUPLEX_ULFB_START))
-           || ((i >= DUPLEX_ULFB_END)&&(i<DUPLEX_B1)) ) {
-            return true;
-        }
-    }
-    return false;
-}
-
-// expensive, try to cache
-uint32_t duplex_duty_per_radio(const duplex_timeslot_t* const dts, const bool flip) {
-    uint32_t out = 0;
-    for(uint32_t i = 0; i < DUPLEX_FRAMES; i++) {
-        const bool r = duplex_do_userdata(dts, i, flip);
-        if( r ) {
-            out++;
-        }
-    }
-    return out;
-}
-
-// expensive, try to cache
-void duplex_build_tx_map(const duplex_timeslot_t* const dts, bool* const map, const bool flip) {
-    for(uint32_t i = 0; i < DUPLEX_FRAMES; i++) {
-        const bool r = duplex_do_userdata(dts, i, flip);
-        map[i] = r;
-    }
-}
-
-// #include <iostream>
-// call duplex_build_tx_map() one time, get the map / lookup table, save result
-// pass a start lifetime32
-// pass a number of frames
-// pass the map/lookup table
-// this will return the lifetime32 in which you will be DONE sending your data
-uint32_t duplex_duty_frame_done(const uint32_t start, const uint32_t duration, const bool* const map) {
-
-    uint32_t out = 0; // what is the count of duty cycles
-    uint32_t accounted = 0; // how many values have we checked
-    while( out < duration ) {
-
-        // we check progress this way because accounted always increments
-        const uint32_t life = start + accounted;
-        const uint32_t progress = life % DUPLEX_FRAMES;
-            // std::cout << "progress " << progress;
-        if( map[progress] ) {
-            out++;
-            // std::cout << " counted ";
-        } else {
-            // std::cout << " not counted ";
-        }
-        // std::cout << "\n";
-
-        accounted++; // always
-    }
-    return start+accounted;
-}
-
 
 
 // #define DUPLEX_PRINT
@@ -316,7 +228,6 @@ __RISCV_INLINE bool duplex_calculate_phase(duplex_timeslot_t* const dts, const u
 }
 #pragma GCC diagnostic pop
 
-// Warning there is an different function with the same name (get_duplex_mode) in AirPacket
 uint32_t get_duplex_mode(duplex_timeslot_t* const dts, const uint32_t i, const uint32_t lifetime) {
 
     duplex_calculate_phase(dts, lifetime);
@@ -588,7 +499,7 @@ bool duplex_tag_section(
                 }
                 break;
             case 28:
-                if ( (i < 4) || (i == (DUPLEX_B0) || i == (DUPLEX_B0+1)) ) {
+                if ( (i >= 0 && i < 4) || (i == (DUPLEX_B0) || i == (DUPLEX_B0+1)) ) {
                     return true;
                 }
                 break;
@@ -668,32 +579,7 @@ uint32_t duplex_fft_set_for_mode(const duplex_timeslot_t* const role, const uint
     }
 }
 
-// get the next frame that is modulous of value passed
-// may return exact same frame
-// pass lifetime32 and f as 43 to find the next lifetime that is mod 43
-uint32_t duplex_next_frame(const uint32_t lifetime, const uint32_t sf) {
-    uint32_t mod = (lifetime+DUPLEX_FRAMES-sf) % DUPLEX_FRAMES;
-    
-    if( mod == 0 ) {
-        return lifetime;
-    }
 
-    return lifetime+DUPLEX_FRAMES-mod;
-}
-
-
-bool duplex_narrowband_move(const duplex_timeslot_t dts, const uint32_t lifetime_32){
-
-    if(((dts.role == DUPLEX_ROLE_RX) && ((lifetime_32%DUPLEX_FRAMES == 0) || (lifetime_32%DUPLEX_FRAMES == 1))) || 
-        ((dts.role == DUPLEX_ROLE_TX_0) && (lifetime_32%DUPLEX_FRAMES == DUPLEX_ULFB_START)) || 
-        ((dts.role == DUPLEX_ROLE_TX_1) && (lifetime_32%DUPLEX_FRAMES == DUPLEX_ULFB_START+1))){
-        return true;
-    }
-    else{
-        return false;
-    }
-
-}
 /*
 
 // load into https://coliru.stacked-crooked.com/
@@ -781,14 +667,6 @@ void print_duplex_helper(duplex_timeslot_t* r, std::string name, bool include_dn
             cout << v+1;
         }
         cout << "  " << name << " duplex_dl_beam_pilot_phase" << "\n";
-    }
-    if(1) {
-        for( int i = 0; i < DUPLEX_FRAMES; i++ ) {
-            uint32_t dmode = get_duplex_mode(r, i, i);
-            int32_t v = duplex_do_userdata(r, dmode, false);
-            cout << (v?1:0);
-        }
-        cout << "  " << name << " duplex_do_userdata" << "\n";
     }
     cout << "\n";
 }
